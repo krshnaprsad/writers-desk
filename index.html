@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="web/app.css">
 </head>
 <body>
-<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Writer's Desk</h1><p class="tag">Read your own writing back to yourself</p></div><span class="ver">v1.0</span></header>
+<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Writer's Desk</h1><p class="tag">Read your own writing back to yourself</p></div><span class="ver">v1.1</span></header>
 <main>
   <section class="card">
     <h2>Paste your writing</h2>
@@ -26,17 +26,21 @@
   </section>
   <div id="out" hidden>
     <section class="card"><div class="stats" id="stats"></div></section>
-    <section class="card"><h2>Marked text</h2><div class="legend" id="legend"></div><div class="marked" id="marked"></div><p class="note" id="markednote"></p></section>
+    <section class="card"><h2>Marked text</h2><div class="legend" id="legend"></div><div class="fixes" id="fixes"></div><div class="row fixrow"><button class="btn" id="undo2" hidden>Undo</button><span class="note" id="fixmsg"></span></div><div class="marked" id="marked"></div><p class="note" id="markednote"></p></section>
     <section class="card"><h2>Sentence rhythm</h2><div id="rhythm"></div></section>
     <section class="card"><h2>Repeated words</h2><div id="reps"></div></section>
   </div>
-  <section class="card limits"><h3>What this can and cannot tell you</h3>
-    <p class="note">The counts are exact. The marks are only my opinion of tired phrases, filler and padded words, from lists you can read and change in <code>data/phrases.js</code>. Plenty of good writing uses them on purpose. It does not tell you whether a person or an AI wrote something. It works on English text and runs completely in your browser.</p>
+  <section class="card limits"><h3>What this can and cannot do</h3>
+    <p class="note">The counts are exact. The marks are my opinion of tired phrases, filler and padded words, from lists you can read and change in <code>data/phrases.js</code>. Plenty of good writing uses them on purpose.</p>
+    <p class="note">The fixes are not an AI and nothing is uploaded. Alternatives come from small built-in lists (<code>data/swaps.js</code>), so for many phrases there is no suggestion, and a suggestion can be wrong for your sentence. Spelling uses a standard word list, and it will mark names and made-up words. The grammar checks are only a few simple rules: a or an, doubled words, capital letters and spacing. It cannot catch wrong word choice, tense or sentence structure. Always read your text again, and use Undo if a change reads badly. It does not tell you whether a person or an AI wrote something. It works on English and runs in your browser.</p>
   </section>
   <p class="foot">Made by Zero3. <a href="https://github.com/krshnaprsad/writers-desk" target="_blank" rel="noopener">Source on GitHub</a></p>
 </main>
+<div id="pop" class="pop" hidden></div>
 <script src="data/phrases.js"></script>
+<script src="data/swaps.js"></script>
 <script src="src/desk.js"></script>
+<script src="src/spell.js"></script>
 <script src="web/app.js"></script>
 </body>
 </html>
