@@ -42,3 +42,8 @@ mark[data-i]{cursor:pointer}mark[data-i]:hover,mark[data-i]:focus{background:#22
 .opt{display:block;width:100%;text-align:left;background:transparent;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:7px 10px;margin:5px 0;font:inherit;font-size:14px;cursor:pointer}.opt:hover{border-color:#fff}
 .opt.dim{color:var(--dim);display:inline-block;width:auto;margin-right:6px}.pa{margin-top:8px}.note.small{font-size:12px}
 .chip.m-spell{border-bottom:2px dashed #fff}.chip.m-gram{outline:1px solid #8a8a8a}
+.bar{height:6px;border:1px solid var(--line2);border-radius:99px;margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:#fff;transition:width .3s}
+.smout{border:1px dashed var(--line2);border-radius:8px;padding:8px 10px;margin:8px 0;font:15px Georgia,serif}
+.smcmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.smcmp div{border:1px solid var(--line2);border-radius:8px;padding:10px;font:15px/1.6 Georgia,serif;white-space:pre-wrap}.smcmp b{display:block;font:600 11px system-ui;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.smwords{margin:6px 0;font-size:14px}.smwords li{margin:2px 0}.smwarn{color:#ffb454;font-size:13px}
+@media(max-width:620px){.smcmp{grid-template-columns:1fr}}
