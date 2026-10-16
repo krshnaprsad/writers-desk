@@ -90,7 +90,7 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.7"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.8"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
@@ -102,8 +102,8 @@
   else {
     smm.textContent = "Checking what this device can run...";
     DeskSmart.probe().then(function (pr) {
-      var ks = pr.gpu ? ["small", "big"] : ["small"];
-      smm.textContent = pr.gpu ? "Your browser can use the graphics chip, which is faster. Both models are available." : "No usable graphics acceleration here, so it will run on the processor, slower. Only the small model is offered, because the bigger one does not fit in a browser tab without the graphics chip.";
+      var ks = pr.gpu && !DeskSmart.bigDead() ? ["small", "big"] : ["small"];
+      smm.textContent = pr.gpu ? "Your browser can use the graphics chip, which is faster. " + (DeskSmart.bigDead() ? "The bigger model is turned off here because it gave unusable output." : "Both models are available.") + "" : "No usable graphics acceleration here, so it will run on the processor, slower. Only the small model is offered, because the bigger one does not fit in a browser tab without the graphics chip.";
       Promise.all(ks.map(function (k) { return DeskSmart.info(k); })).then(function (infos) {
       pick.innerHTML = ks.map(function (k, j) { var m = DeskSmart.MODELS[k]; return '<button class="btn" data-model="' + k + '">Turn on ' + m.name + ", download " + (infos[j].a ? infos[j].a.mb : (pr.gpu ? m.gpuMB : m.cpuMB)) + ' MB</button>'; }).join("") + '<span class="note">Needs ' + DeskSmart.MODELS.small.ram + " for the small one" + (pr.gpu ? ", " + DeskSmart.MODELS.big.ram + " for the bigger one" : "") + ". The download is kept in your browser, so a failed start does not download it again.</span>";
       var auto = null; try { auto = sessionStorage.getItem("wd-smart-auto"); sessionStorage.removeItem("wd-smart-auto"); } catch (x) {}
@@ -143,8 +143,8 @@
       if (words.length) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary):</p><p class="note">Looking them up...</p>';
         DeskSmart.define(words).then(function (d) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary). If you do not like one, Discard and run again, or change it in the text after you accept:</p><ul class="smwords">' + words.map(function (w) { return "<li><b>" + esc(w) + "</b>" + (d[w] ? ": " + esc(d[w]) : "") + "</li>"; }).join("") + "</ul>"; }); }
     }).catch(function (e) {
-      if (e && e.garbage && DeskSmart.current()) { var k = DeskSmart.current(); return DeskSmart.markBad(k).then(function (more) { res.innerHTML = '<p class="note">This method gave garbage (' + esc(e.raw.split("\n")[0]) + "). " + (more ? "Switching to the next method and reloading..." : "I have no more methods to try for this model. Please use the other model and send me the technical details.") + "</p>"; if (more) setTimeout(function () { location.reload(); }, 1500); }); }
+      if (e && e.garbage && DeskSmart.current()) { var k = DeskSmart.current(); return DeskSmart.markBad(k).then(function (more) { res.innerHTML = '<p class="note">This method gave garbage (' + esc(e.raw.split("\n")[0]) + "). " + (more ? "Switching to the next method and reloading..." : "The bigger model gave unusable output with every method here, so I have turned it off on this device. The small one still works. Reload the page to continue.") + "</p>"; if (more) setTimeout(function () { location.reload(); }, 1500); }); }
       res.innerHTML = '<p class="note">' + (e && e.guard ? "This attempt failed, try again." : "Smart mode failed: " + esc(e && e.message ? e.message : "unknown error")) + "</p>" + (e && e.raw ? '<details><summary>Technical details</summary><pre class="note" style="white-space:pre-wrap">' + esc(e.raw) + "</pre></details>" : ""); }).then(function () { document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = false; }); });
   }; });
-  window.WritersDesk = { run: run, version: "1.2.7" };
+  window.WritersDesk = { run: run, version: "1.2.8" };
 })();
