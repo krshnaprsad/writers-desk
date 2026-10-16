@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Writer's Desk</title>
-<link rel="stylesheet" href="web/app.css?v=1.2.2">
+<link rel="stylesheet" href="web/app.css?v=1.2.3">
 </head>
 <body>
-<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Writer's Desk</h1><p class="tag">Read your own writing back to yourself</p></div><span class="ver">v1.2.2</span></header>
+<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Writer's Desk</h1><p class="tag">Read your own writing back to yourself</p></div><span class="ver">v1.2.3</span></header>
 <div id="stale" class="note stale" hidden></div>
 <main>
   <section class="card">
@@ -48,17 +48,17 @@
   <p class="foot">Made by Zero3. <a href="https://github.com/krshnaprsad/writers-desk" target="_blank" rel="noopener">Source on GitHub</a></p>
 </main>
 <div id="pop" class="pop" hidden></div>
-<script src="data/phrases.js?v=1.2.2"></script>
-<script src="data/swaps.js?v=1.2.2"></script>
-<script src="src/desk.js?v=1.2.2"></script>
-<script src="src/spell.js?v=1.2.2"></script>
-<script src="web/smart.js?v=1.2.2"></script>
-<script src="web/app.js?v=1.2.2"></script>
+<script src="data/phrases.js?v=1.2.3"></script>
+<script src="data/swaps.js?v=1.2.3"></script>
+<script src="src/desk.js?v=1.2.3"></script>
+<script src="src/spell.js?v=1.2.3"></script>
+<script src="web/smart.js?v=1.2.3"></script>
+<script src="web/app.js?v=1.2.3"></script>
 <script>
 (function () {
   var miss = [];
   [["Desk", "src/desk.js"], ["DeskSwaps", "data/swaps.js"], ["DeskLists", "data/phrases.js"], ["DeskSpell", "src/spell.js"], ["DeskSmart", "web/smart.js"]].forEach(function (x) { if (!window[x[0]]) miss.push(x[1]); });
-  var old = !window.WritersDesk || window.WritersDesk.version !== "1.2.2";
+  var old = !window.WritersDesk || window.WritersDesk.version !== "1.2.3";
   if (miss.length || old) {
     var b = document.getElementById("stale"); b.hidden = false;
     b.textContent = old ? "Your browser is showing an older copy of this page, so some buttons are missing. Press Ctrl+F5 (Windows), or on a phone clear this site's data in the browser settings, then open the page again." : "Some files did not load (" + miss.join(", ") + "). Check your connection and reload the page.";
