@@ -19,5 +19,3 @@ Layout:
 - `web/app.js` is only the page.
 
 Marks never overlap. When two marks hit the same text, the higher priority wins: spelling, grammar, long dash, cliche, padded word, filler, repeat.
-
-`web/smart.js` is the optional on-device model code. It is not covered by `npm test` because it needs a browser and a large download. It loads transformers.js (Apache 2.0) from a CDN, pinned to one version, and the Qwen2.5 models (Apache 2.0) from Hugging Face. To try it, open `index.html` in a recent Chrome or Edge.
