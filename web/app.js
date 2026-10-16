@@ -90,7 +90,7 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.6"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.7"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
@@ -110,10 +110,10 @@
       pick.querySelectorAll("[data-model]").forEach(function (b) { b.onclick = function () {
         var k = b.dataset.model; pick.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); smbar.hidden = false; smm.textContent = "Downloading...";
         DeskSmart.load(k, function (f, t) { $("#smfill").style.width = Math.round(f * 100) + "%"; smm.textContent = t; }).then(function () {
-          smbar.hidden = true; pick.hidden = true; $("#smtools").hidden = false; smm.textContent = DeskSmart.MODELS[k].name + " is on. It runs on your device."; DeskSmart.methodNow(k).then(function (m) { if (m) { var d = document.createElement("details"); d.innerHTML = "<summary>Technical details</summary><pre class=\"note\"></pre>"; d.querySelector("pre").textContent = "Method that worked: " + m + "\nWriter's Desk " + WritersDesk.version; smm.appendChild(d); } });
-        }, function (e) { smbar.hidden = true; pick.querySelectorAll("button").forEach(function (x) { x.disabled = false; }); smm.textContent = "It could not start: " + (e && e.message ? e.message : "unknown error"); var d = document.createElement("details"); d.innerHTML = "<summary>Technical details (send me these)</summary><pre class=\"note\" style=\"white-space:pre-wrap\"></pre>"; d.querySelector("pre").textContent = "Writer's Desk " + (window.WritersDesk ? WritersDesk.version : "") + "\nPath: " + (e && e.path || "") + "\nError: " + (e && e.raw || e) + "\nBrowser: " + navigator.userAgent; smm.appendChild(d); });
+          smbar.hidden = true; pick.hidden = true; $("#smtools").hidden = false; smm.textContent = DeskSmart.MODELS[k].name + " is on. It runs on your device."; DeskSmart.methodNow(k).then(function (m) { if (m) { var d = document.createElement("details"); d.innerHTML = "<summary>Technical details</summary><pre class=\"note\"></pre>"; d.querySelector("pre").textContent = "Method in use: " + m + "\nWriter's Desk " + WritersDesk.version + "\nLog:\n" + DeskSmart.log(k).join("\n"); smm.appendChild(d); } });
+        }, function (e) { smbar.hidden = true; pick.querySelectorAll("button").forEach(function (x) { x.disabled = false; }); smm.textContent = "It could not start: " + (e && e.message ? e.message : "unknown error"); var d = document.createElement("details"); d.innerHTML = "<summary>Technical details (send me these)</summary><pre class=\"note\" style=\"white-space:pre-wrap\"></pre>"; d.querySelector("pre").textContent = "Writer's Desk " + (window.WritersDesk ? WritersDesk.version : "") + "\nPath: " + (e && e.path || "") + "\nError: " + (e && e.raw || e) + "\nLog:\n" + (window.DeskSmart ? DeskSmart.log(k).join("\n") : "") + "\nBrowser: " + navigator.userAgent; smm.appendChild(d); });
       }; });
-      if (auto && pick.querySelector("[data-model=" + auto + "]")) { DeskSmart.info(auto).then(function (n) { smm.textContent = "The first method did not work on this device. Trying method " + (n.i + 1) + " of " + n.n + " (" + n.a.dev + ", " + n.a.dt + ", download up to " + n.a.mb + " MB)..."; pick.querySelector("[data-model=" + auto + "]").click(); }); }
+      if (auto && pick.querySelector("[data-model=" + auto + "]")) { DeskSmart.info(auto).then(function (n) { smm.textContent = (n.reason || "The earlier method did not work on this device.") + " Trying method " + (n.i + 1) + " of " + n.n + " (" + n.a.dev + ", " + n.a.dt + "). " + (n.cached ? "Those files are already downloaded." : "This needs another download of about " + n.a.mb + " MB."); pick.querySelector("[data-model=" + auto + "]").click(); }); }
       });
     });
   }
@@ -146,5 +146,5 @@
       if (e && e.garbage && DeskSmart.current()) { var k = DeskSmart.current(); return DeskSmart.markBad(k).then(function (more) { res.innerHTML = '<p class="note">This method gave garbage (' + esc(e.raw.split("\n")[0]) + "). " + (more ? "Switching to the next method and reloading..." : "I have no more methods to try for this model. Please use the other model and send me the technical details.") + "</p>"; if (more) setTimeout(function () { location.reload(); }, 1500); }); }
       res.innerHTML = '<p class="note">' + (e && e.guard ? "This attempt failed, try again." : "Smart mode failed: " + esc(e && e.message ? e.message : "unknown error")) + "</p>" + (e && e.raw ? '<details><summary>Technical details</summary><pre class="note" style="white-space:pre-wrap">' + esc(e.raw) + "</pre></details>" : ""); }).then(function () { document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = false; }); });
   }; });
-  window.WritersDesk = { run: run, version: "1.2.6" };
+  window.WritersDesk = { run: run, version: "1.2.7" };
 })();
