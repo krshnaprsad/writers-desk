@@ -90,11 +90,22 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.3.0"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.3.1"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
   setTimeout(loadDict, 50);
   try { Object.keys(localStorage).forEach(function (k) { if (/^wd-smart/.test(k)) localStorage.removeItem(k); }); sessionStorage.removeItem("wd-smart-auto"); } catch (e) {}
-  window.WritersDesk = { run: run, version: "1.3.0" };
+  // Smart mode is gone. Its model files (saved by the transformers.js/onnxruntime engine) can still sit in this browser's Cache Storage, IndexedDB or OPFS. Delete only storages whose names match that engine; everything else on this origin stays.
+  (function () {
+    var pat = /transformers|onnx|huggingface/i;
+    try { if (window.caches) caches.keys().then(function (ks) { ks.forEach(function (k) { if (pat.test(k)) { try { caches.delete(k); } catch (e) {} } }); }); } catch (e) {}
+    try { if (window.indexedDB && indexedDB.databases) indexedDB.databases().then(function (dbs) { (dbs || []).forEach(function (d) { if (d && d.name && pat.test(d.name)) { try { indexedDB.deleteDatabase(d.name); } catch (e) {} } }); }); } catch (e) {}
+    try {
+      if (navigator.storage && navigator.storage.getDirectory) navigator.storage.getDirectory().then(function (dir) {
+        return dir.keys ? (async function () { var dels = []; for await (var n of dir.keys()) { if (pat.test(n)) dels.push(dir.removeEntry(n, { recursive: true }).catch(function () {})); } await Promise.all(dels); })() : null;
+      }).catch(function () {});
+    } catch (e) {}
+  })();
+  window.WritersDesk = { run: run, version: "1.3.1" };
 })();
