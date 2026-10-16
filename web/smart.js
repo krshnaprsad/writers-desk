@@ -32,26 +32,59 @@
     }).catch(function () { return { gpu: false }; });
     return probed;
   }
-  function load(k, progress) {
-    if (cur && key === k) return Promise.resolve(cur);
-    if (loading && loading.k === k) return loading.p;
-    var s = support(); if (!s.ok) return Promise.reject(new Error(s.why));
-    trail = []; var p = probe().then(function (pr) { s.gpu = pr.gpu; trail.push("webgpu " + (pr.gpu ? "ok" : (pr.f16 === false ? "no f16" : "none"))); if (k === "big" && !pr.gpu) throw new Error("The bigger model needs the graphics chip (WebGPU), and this browser does not offer it. Please use the small one."); return import(LIB); }).then(function (T) {
-      try { T.env.backends.onnx.wasm.numThreads = 1; T.env.backends.onnx.wasm.proxy = false; T.env.backends.onnx.webgpu.powerPreference = "high-performance"; } catch (e) {}
+  // Methods to try, in order. Some graphics drivers crash the engine on one file type, so we try the others.
+  // A crash ("Aborted") leaves the engine unusable until the page reloads, so after one the page reloads itself and moves to the next method.
+  var L4 = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/dist/transformers.min.js";
+  function list(k, gpu) {
+    var m = MODELS[k];
+    if (k === "big") return gpu ? [{ lib: L4, dev: "webgpu", dt: "q4f16", mb: m.gpuMB }, { lib: LIB, dev: "webgpu", dt: "q4f16", mb: m.gpuMB }] : [];
+    if (!gpu) return [{ lib: LIB, dev: "wasm", dt: "q8", mb: m.cpuMB }, { lib: L4, dev: "wasm", dt: "q8", mb: m.cpuMB }];
+    return [
+      { lib: L4, dev: "webgpu", dt: "q4f16", mb: 483 },
+      { lib: LIB, dev: "webgpu", dt: "q4", mb: 786 },
+      { lib: L4, dev: "webgpu", dt: "fp16", mb: 988 },
+      { lib: LIB, dev: "wasm", dt: "q8", mb: 512 }
+    ];
+  }
+  function label(a) { return a.dev + " " + a.dt + " (engine " + (a.lib === LIB ? "3.7.5" : "4.3.1") + ")"; }
+  function getSt(k) { try { return JSON.parse(localStorage.getItem("wd-smart-" + k) || "{}"); } catch (e) { return {}; } }
+  function setSt(k, v) { try { localStorage.setItem("wd-smart-" + k, JSON.stringify(v)); } catch (e) {} }
+  function info(k) { return probe().then(function (pr) { var L = list(k, pr.gpu), st = getSt(k), i = st.ok != null ? st.ok : (st.next || 0); return { i: i, n: L.length, a: L[i], retry: !!st.next && st.ok == null }; }); }
+  function tryOne(a, k, progress) {
+    return import(a.lib).then(function (T) {
       var files = {}, m = MODELS[k];
       function cb(x) {
         if (x.status === "progress" && x.total) { files[x.file] = { l: x.loaded, t: x.total }; var l = 0, t = 0; for (var f in files) { l += files[f].l; t += files[f].t; } progress(t ? l / t : 0, Math.round(l / 1e6) + " of " + Math.round(t / 1e6) + " MB"); }
         else if (x.status === "ready") progress(1, "Starting up...");
       }
-      var tryGpu = s.gpu;
-      if (k === "big") return trail.push("try webgpu q4f16"), T.pipeline("text-generation", m.id, { device: "webgpu", dtype: "q4f16", progress_callback: cb });
-      // Small model: graphics chip when it is fully supported, otherwise the processor (one thread, because this page cannot use more).
-      return (tryGpu ? (trail.push("try webgpu q4f16"), T.pipeline("text-generation", m.id, { device: "webgpu", dtype: "q4f16", progress_callback: cb })) : Promise.reject()).catch(function (e0) {
-        trail.push("webgpu failed: " + String(e0 && e0.message || e0).slice(0, 120));
-        if (e0 && /abort/i.test(String(e0.message || e0))) throw e0;
-        files = {}; trail.push("try wasm q8"); return T.pipeline("text-generation", m.id, { device: "wasm", dtype: "q8", progress_callback: cb });
+      try { T.env.backends.onnx.wasm.numThreads = 1; T.env.backends.onnx.wasm.proxy = false; if (T.env.backends.onnx.webgpu) T.env.backends.onnx.webgpu.powerPreference = "high-performance"; } catch (e) {}
+      return T.pipeline("text-generation", m.id, { device: a.dev, dtype: a.dt, progress_callback: cb });
+    });
+  }
+  function load(k, progress) {
+    if (cur && key === k) return Promise.resolve(cur);
+    if (loading && loading.k === k) return loading.p;
+    var s = support(); if (!s.ok) return Promise.reject(new Error(s.why));
+    var p = probe().then(function (pr) {
+      var L = list(k, pr.gpu);
+      if (!L.length) throw new Error("The bigger model needs the graphics chip (WebGPU), and this browser does not offer it. Please use the small one.");
+      var st = getSt(k), i = st.ok != null ? st.ok : (st.next || 0), errs = st.errs || [];
+      if (i >= L.length) { i = 0; errs = []; }
+      var a = L[i];
+      return tryOne(a, k, progress).then(function (g) { setSt(k, { ok: i }); return g; }, function (e) {
+        errs.push((i + 1) + ". " + label(a) + ": " + String(e && (e.stack || e.message) || e).slice(0, 400));
+        if (st.ok != null) { setSt(k, {}); } // a method that used to work stopped working: start over from the top next time
+        else if (i + 1 < L.length) {
+          setSt(k, { next: i + 1, errs: errs });
+          try { sessionStorage.setItem("wd-smart-auto", k); } catch (x) {}
+          location.reload();
+          return new Promise(function () {});
+        } else setSt(k, {});
+        var er = new Error(plain(errs.join(" ")));
+        er.raw = errs.join("\n"); er.path = "tried " + (i + 1) + " of " + L.length + " methods";
+        throw er;
       });
-    }).then(function (g) { cur = g; key = k; return g; }, function (e) { loading = null; var er = new Error(plain(e)); er.raw = String(e && (e.stack || e.message) || e); er.path = trail.join(" > "); throw er; });
+    }).then(function (g) { cur = g; key = k; return g; }, function (e) { loading = null; throw e; });
     loading = { k: k, p: p };
     return p;
   }
@@ -95,5 +128,5 @@
     var out = []; (after.toLowerCase().match(/[a-z']+/g) || []).forEach(function (w) { var b = w.replace(/(ing|ed|es|s|ly)$/, ""); if (w.length >= 6 && !seen[w] && !seen[b] && out.indexOf(w) < 0) out.push(w); });
     return out.slice(0, 8);
   }
-  window.DeskSmart = { MODELS: MODELS, support: support, probe: probe, load: load, rewrite: rewrite, define: define, addedFacts: addedFacts, newWords: newWords, ready: function () { return !!cur; }, current: function () { return key; } };
+  window.DeskSmart = { MODELS: MODELS, support: support, probe: probe, info: info, load: load, rewrite: rewrite, define: define, addedFacts: addedFacts, newWords: newWords, ready: function () { return !!cur; }, current: function () { return key; } };
 })();
