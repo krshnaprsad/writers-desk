@@ -36,6 +36,7 @@ Or download the repo and open `index.html`. Nothing to install. Your text never 
 
 ## Things to know
 
+- If a button from the latest version is missing, your browser is showing an old copy. Press Ctrl+F5 on Windows, or clear the site data on your phone. The page also tells you when it spots this.
 - The counts are exact. The marks are my opinion. The lists of phrases are in `data/phrases.js` and you can read and change them. Plenty of good writing uses these words on purpose, so treat a mark as a question, not a mistake.
 - It does not tell you whether a person or an AI wrote something. Nothing can tell that for sure from text alone. Long dashes and words like "testament" are only habits that often show up in machine written text, so I mark them so you can choose.
 - The sentence splitter is simple. It handles Mr., Dr. and decimals, but poetry, lists and unusual punctuation can throw the sentence count off.
