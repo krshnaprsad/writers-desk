@@ -17,6 +17,17 @@ Version 1.1 can also fix what it marks. Tap any mark and you get the reason and 
 
 There is also a clean up button. It turns long dashes into short ones, curly quotes into plain ones, and removes hidden characters and double spaces. It only changes what you tick, your words stay as you wrote them, and there is an undo.
 
+## Smart mode (optional, new in 1.2)
+
+Smart mode is off until you turn it on. It runs a small AI model inside your browser, so your text never leaves your device. It is free, with no account and no key. Pick a model, it downloads once (about 500 MB for the small one, about 1.2 GB for the bigger one if your browser has WebGPU, more if not) and stays in your browser. Then you can select some text, or put the cursor in a paragraph, and choose:
+
+- Humanize, to sound more natural and less stiff
+- Literary and richer words, which lists the new words it used with short meanings
+
+You see before and after, then Accept or Discard, and Undo works after Accept. Em dashes are stripped from whatever it writes.
+
+What it cannot do: I have not measured how good the rewrites are. These are small models (0.5 billion and 1.5 billion parameters), so expect drafts, not finished writing. They can lose your voice, change the meaning, or add things you did not say. I flag numbers and names that were not in your text, but that is not a full check. The word meanings come from the same small model and can be wrong. The bigger model needs about 3 GB of free memory and may not start on a modest laptop. Without WebGPU it runs on the processor and can take minutes. The model code loads from a free CDN (jsDelivr) and the model files from Hugging Face, and neither receives your text.
+
 ## Use it
 
 Open the app: https://krshnaprsad.github.io/writers-desk/
@@ -45,6 +56,7 @@ Or download the repo and open `index.html`. Nothing to install. Your text never 
 - `data/phrases.js` the phrase lists
 - `data/swaps.js` the alternatives behind the fixes
 - `data/dict-*.js` the English word list (hunspell en_US, see `vendor/NOTICE.md`)
+- `web/smart.js` Smart mode, loads the library and models only when you turn it on
 - `vendor/nspell.js` the spelling library (MIT, Titus Wormer)
 - `tests/` the tests
 
