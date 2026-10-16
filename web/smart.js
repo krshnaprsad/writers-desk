@@ -49,7 +49,10 @@
   function label(a) { return a.dev + " " + a.dt + " (engine " + (a.lib === LIB ? "3.7.5" : "4.3.1") + ")"; }
   function getSt(k) { try { return JSON.parse(localStorage.getItem("wd-smart-" + k) || "{}"); } catch (e) { return {}; } }
   function setSt(k, v) { try { localStorage.setItem("wd-smart-" + k, JSON.stringify(v)); } catch (e) {} }
-  function info(k) { return probe().then(function (pr) { var L = list(k, pr.gpu), st = getSt(k), i = st.ok != null ? st.ok : (st.next || 0); return { i: i, n: L.length, a: L[i], retry: !!st.next && st.ok == null }; }); }
+  function logOf(k) { try { return JSON.parse(localStorage.getItem("wd-smart-log-" + k) || "[]"); } catch (e) { return []; } }
+  function logAdd(k, msg) { var l = logOf(k); l.push(new Date().toISOString().slice(11, 19) + " " + msg); try { localStorage.setItem("wd-smart-log-" + k, JSON.stringify(l.slice(-30))); } catch (e) {} }
+  function loadedBefore(k, a) { return logOf(k).some(function (x) { return x.indexOf(" " + a.dev + " " + a.dt + " ") >= 0 && /: loaded/.test(x); }); }
+  function info(k) { return probe().then(function (pr) { var L = list(k, pr.gpu), st = getSt(k), i = st.ok != null ? st.ok : (st.next || 0); return { i: i, n: L.length, a: L[i], retry: !!st.next && st.ok == null, reason: st.reason || "", cached: L[i] ? loadedBefore(k, L[i]) : false }; }); }
   // Download progress comes from the "progress_total" event (all files, known up front). Older engines only report per file.
   // A watchdog turns a stall into an error, so the page moves to the next method instead of hanging.
   function tryOne(a, k, progress) {
@@ -87,11 +90,11 @@
       var st = getSt(k), i = st.ok != null ? st.ok : (st.next || 0), errs = st.errs || [];
       if (i >= L.length) { i = 0; errs = []; }
       var a = L[i];
-      return tryOne(a, k, progress).then(function (g) { curIdx = i; setSt(k, { ok: i }); return g; }, function (e) {
-        errs.push((i + 1) + ". " + label(a) + ": " + String(e && (e.stack || e.message) || e).slice(0, 400));
+      return tryOne(a, k, progress).then(function (g) { curIdx = i; setSt(k, { ok: i }); logAdd(k, "method " + (i + 1) + " of " + L.length + " " + label(a) + ": loaded"); return g; }, function (e) {
+        errs.push((i + 1) + ". " + label(a) + ": " + String(e && (e.stack || e.message) || e).slice(0, 400)); logAdd(k, "method " + (i + 1) + " of " + L.length + " " + label(a) + ": failed to start, " + String(e && e.message || e).slice(0, 150));
         if (st.ok != null) { setSt(k, {}); } // a method that used to work stopped working: start over from the top next time
         else if (i + 1 < L.length) {
-          setSt(k, { next: i + 1, errs: errs });
+          setSt(k, { next: i + 1, errs: errs, reason: "Method " + (i + 1) + " could not start (" + plain(e).slice(0, 120) + ")." });
           try { sessionStorage.setItem("wd-smart-auto", k); } catch (x) {}
           location.reload();
           return new Promise(function () {});
@@ -107,10 +110,12 @@
   // The current method produces garbage (for example "!!!!" from fp16 on some graphics drivers). Skip it and reload on the next one.
   function markBad(k) {
     return probe().then(function (pr) {
-      var L = list(k, pr.gpu), st = getSt(k), errs = st.errs || [];
-      errs.push((curIdx + 1) + ". " + label(L[curIdx]) + ": loaded but produced garbage output");
-      if (curIdx + 1 >= L.length) { setSt(k, {}); return false; }
-      setSt(k, { next: curIdx + 1, errs: errs });
+      var L = list(k, pr.gpu), st = getSt(k), errs = st.errs || [], bad = L[curIdx], nx = curIdx + 1;
+      errs.push((curIdx + 1) + ". " + label(bad) + ": loaded but produced unusable output");
+      logAdd(k, "method " + (curIdx + 1) + " of " + L.length + " " + label(bad) + ": unusable output (garbage characters)");
+      while (nx < L.length && L[nx].dt === bad.dt) nx++; // the same file would give the same garbage on another engine
+      if (nx >= L.length) { setSt(k, {}); return false; }
+      setSt(k, { next: nx, errs: errs, reason: "Method " + (curIdx + 1) + " (" + bad.dt + ") gave unusable output." });
       try { sessionStorage.setItem("wd-smart-auto", k); } catch (x) {}
       return true;
     });
@@ -237,5 +242,5 @@
     var out = []; (after.toLowerCase().match(/[a-z']+/g) || []).forEach(function (w) { var b = w.replace(/(ing|ed|es|s|ly)$/, ""); if (w.length >= 6 && !seen[w] && !seen[b] && out.indexOf(w) < 0) out.push(w); });
     return out.slice(0, 8);
   }
-  window.DeskSmart = { markBad: markBad, methodNow: methodNow, check: check, chunks: chunks, genOpts: genOpts, MODELS: MODELS, support: support, probe: probe, info: info, load: load, rewrite: rewrite, define: define, addedFacts: addedFacts, newWords: newWords, ready: function () { return !!cur; }, current: function () { return key; } };
+  window.DeskSmart = { log: logOf,  markBad: markBad, methodNow: methodNow, check: check, chunks: chunks, genOpts: genOpts, MODELS: MODELS, support: support, probe: probe, info: info, load: load, rewrite: rewrite, define: define, addedFacts: addedFacts, newWords: newWords, ready: function () { return !!cur; }, current: function () { return key; } };
 })();
