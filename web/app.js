@@ -90,61 +90,11 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.9"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.3.0"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
   setTimeout(loadDict, 50);
-  // ---- Smart mode (optional, off until asked) ----
-  var sup = window.DeskSmart ? DeskSmart.support() : { ok: false, why: "Smart mode did not load." };
-  var smm = $("#smmsg"), smbar = $("#smbar"), pick = $("#smpick");
-  if (!sup.ok) smm.textContent = sup.why;
-  else {
-    smm.textContent = "Checking what this device can run...";
-    DeskSmart.probe().then(function (pr) {
-      var exp = /[?&]bigger=1/.test(location.search), ks = pr.gpu && exp && !DeskSmart.bigDead() ? ["small", "big"] : ["small"];
-      smm.textContent = pr.gpu ? "Your browser can use the graphics chip, which is faster. " + (exp ? "Experimental: the bigger model is shown because the address has ?bigger=1. It gives broken output on some PCs." : "Small model only. The bigger one gave broken output on the test PC, so it is hidden.") + "" : "No usable graphics acceleration here, so it will run on the processor, slower. Only the small model is offered, because the bigger one does not fit in a browser tab without the graphics chip.";
-      Promise.all(ks.map(function (k) { return DeskSmart.info(k); })).then(function (infos) {
-      pick.innerHTML = ks.map(function (k, j) { var m = DeskSmart.MODELS[k]; return '<button class="btn" data-model="' + k + '">Turn on ' + m.name + ", download " + (infos[j].a ? infos[j].a.mb : (pr.gpu ? m.gpuMB : m.cpuMB)) + ' MB</button>'; }).join("") + '<span class="note">Needs ' + DeskSmart.MODELS.small.ram + " for the small one" + (pr.gpu ? ", " + DeskSmart.MODELS.big.ram + " for the bigger one" : "") + ". The download is kept in your browser, so a failed start does not download it again.</span>";
-      var auto = null; try { auto = sessionStorage.getItem("wd-smart-auto"); sessionStorage.removeItem("wd-smart-auto"); } catch (x) {}
-      pick.querySelectorAll("[data-model]").forEach(function (b) { b.onclick = function () {
-        var k = b.dataset.model; pick.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); smbar.hidden = false; smm.textContent = "Downloading...";
-        DeskSmart.load(k, function (f, t) { $("#smfill").style.width = Math.round(f * 100) + "%"; smm.textContent = t; }).then(function () {
-          smbar.hidden = true; pick.hidden = true; $("#smtools").hidden = false; smm.textContent = DeskSmart.MODELS[k].name + " is on. It runs on your device."; DeskSmart.methodNow(k).then(function (m) { if (m) { var d = document.createElement("details"); d.innerHTML = "<summary>Technical details</summary><pre class=\"note\"></pre>"; d.querySelector("pre").textContent = "Method in use: " + m + "\nWriter's Desk " + WritersDesk.version + "\nLog:\n" + DeskSmart.log(k).join("\n"); smm.appendChild(d); } });
-        }, function (e) { smbar.hidden = true; pick.querySelectorAll("button").forEach(function (x) { x.disabled = false; }); smm.textContent = "It could not start: " + (e && e.message ? e.message : "unknown error"); var d = document.createElement("details"); d.innerHTML = "<summary>Technical details (send me these)</summary><pre class=\"note\" style=\"white-space:pre-wrap\"></pre>"; d.querySelector("pre").textContent = "Writer's Desk " + (window.WritersDesk ? WritersDesk.version : "") + "\nPath: " + (e && e.path || "") + "\nError: " + (e && e.raw || e) + "\nLog:\n" + (window.DeskSmart ? DeskSmart.log(k).join("\n") : "") + "\nBrowser: " + navigator.userAgent; smm.appendChild(d); });
-      }; });
-      if (auto && pick.querySelector("[data-model=" + auto + "]")) { DeskSmart.info(auto).then(function (n) { var big = !n.cached && n.a.mb > 800; smm.textContent = (n.reason || "The earlier method did not work on this device.") + " Trying method " + (n.i + 1) + " of " + n.n + " (" + n.a.dev + ", " + n.a.dt + "). " + (n.cached ? "Those files are already downloaded." : "This needs another download of about " + n.a.mb + " MB." + (big ? " That is large, so I did not start it. Press the button if you want it." : "")); if (!big) pick.querySelector("[data-model=" + auto + "]").click(); }); }
-      });
-    });
-  }
-  function smRange() {
-    var ta = $("#txt"), t = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
-    if (e - s > 3) return [s, e];
-    var pos = s, ps = t.lastIndexOf("\n\n", pos - 1); ps = ps < 0 ? 0 : ps + 2; var pe = t.indexOf("\n\n", pos); if (pe < 0) pe = t.length;
-    return [ps, pe];
-  }
-  document.querySelectorAll("[data-sm]").forEach(function (b) { b.onclick = function () {
-    var r = smRange(), t = $("#txt").value, seg = t.slice(r[0], r[1]), mode = b.dataset.sm, res = $("#smres");
-    if (!seg.trim()) { res.innerHTML = '<p class="note">Select some text, or put the cursor in a paragraph, first.</p>'; return; }
-    document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = true; });
-    res.innerHTML = '<p class="note">Thinking. On a laptop this can take from several seconds to a few minutes. I work a few sentences at a time.</p><p class="note" id="smprog"></p>';
-    DeskSmart.rewrite(seg, mode, function (p) {
-      var m = "Working on part " + p.chunk + " of " + p.chunks + (p.attempt > 1 ? " (retry " + (p.attempt - 1) + ", the last try looked bad)" : "") + ". " + p.tokens + " tokens so far" + (p.tps ? ", " + p.tps.toFixed(1) + " tokens per second" : "") + ", " + Math.round(p.secs) + " s.";
-      var el = $("#smprog"); if (el) el.textContent = m;
-    }).then(function (out) {
-      if (!out) throw new Error("It gave nothing back. Try again.");
-      var warn = DeskSmart.addedFacts(seg, out), words = mode === "literary" ? DeskSmart.newWords(seg, out) : [];
-      var h = '<div class="smcmp"><div><b>Before</b>' + esc(seg) + '</div><div><b>After</b>' + esc(out) + "</div></div>";
-      if (warn.length) h += '<p class="smwarn">It added things that were not in your text: ' + esc(warn.join(", ")) + ". Check that these are what you meant.</p>";
-      h += '<div id="smwords"></div><div class="row"><button class="btn go" id="smacc">Accept</button><button class="btn" id="smno">Discard</button></div><p class="note small">Accept replaces the text above. Undo puts it back.</p>';
-      res.innerHTML = h;
-      $("#smacc").onclick = function () { var cur = $("#txt").value; if (cur.slice(r[0], r[1]) !== seg) { res.innerHTML = '<p class="note">The text changed since. Run it again.</p>'; return; } setText(cur.slice(0, r[0]) + out + cur.slice(r[1]), "Rewritten by Smart mode. Use Undo to go back."); res.innerHTML = ""; };
-      $("#smno").onclick = function () { res.innerHTML = ""; };
-      if (words.length) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary):</p><p class="note">Looking them up...</p>';
-        DeskSmart.define(words).then(function (d) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary). If you do not like one, Discard and run again, or change it in the text after you accept:</p><ul class="smwords">' + words.map(function (w) { return "<li><b>" + esc(w) + "</b>" + (d[w] ? ": " + esc(d[w]) : "") + "</li>"; }).join("") + "</ul>"; }); }
-    }).catch(function (e) {
-      if (e && e.garbage && DeskSmart.current()) { var k = DeskSmart.current(); return DeskSmart.markBad(k).then(function (more) { res.innerHTML = '<p class="note">This method gave garbage (' + esc(e.raw.split("\n")[0]) + "). " + (more ? "Switching to the next method and reloading..." : "The bigger model gave unusable output with every method here, so I have turned it off on this device. The small one still works. Reload the page to continue.") + "</p>"; if (more) setTimeout(function () { location.reload(); }, 1500); }); }
-      res.innerHTML = '<p class="note">' + (e && e.guard ? "This attempt failed, try again." : "Smart mode failed: " + esc(e && e.message ? e.message : "unknown error")) + "</p>" + (e && e.raw ? '<details><summary>Technical details</summary><pre class="note" style="white-space:pre-wrap">' + esc(e.raw) + "</pre></details>" : ""); }).then(function () { document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = false; }); });
-  }; });
-  window.WritersDesk = { run: run, version: "1.2.9" };
+  try { Object.keys(localStorage).forEach(function (k) { if (/^wd-smart/.test(k)) localStorage.removeItem(k); }); sessionStorage.removeItem("wd-smart-auto"); } catch (e) {}
+  window.WritersDesk = { run: run, version: "1.3.0" };
 })();
