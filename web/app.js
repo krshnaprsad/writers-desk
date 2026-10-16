@@ -90,7 +90,7 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.8"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.9"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
@@ -102,8 +102,8 @@
   else {
     smm.textContent = "Checking what this device can run...";
     DeskSmart.probe().then(function (pr) {
-      var ks = pr.gpu && !DeskSmart.bigDead() ? ["small", "big"] : ["small"];
-      smm.textContent = pr.gpu ? "Your browser can use the graphics chip, which is faster. " + (DeskSmart.bigDead() ? "The bigger model is turned off here because it gave unusable output." : "Both models are available.") + "" : "No usable graphics acceleration here, so it will run on the processor, slower. Only the small model is offered, because the bigger one does not fit in a browser tab without the graphics chip.";
+      var exp = /[?&]bigger=1/.test(location.search), ks = pr.gpu && exp && !DeskSmart.bigDead() ? ["small", "big"] : ["small"];
+      smm.textContent = pr.gpu ? "Your browser can use the graphics chip, which is faster. " + (exp ? "Experimental: the bigger model is shown because the address has ?bigger=1. It gives broken output on some PCs." : "Small model only. The bigger one gave broken output on the test PC, so it is hidden.") + "" : "No usable graphics acceleration here, so it will run on the processor, slower. Only the small model is offered, because the bigger one does not fit in a browser tab without the graphics chip.";
       Promise.all(ks.map(function (k) { return DeskSmart.info(k); })).then(function (infos) {
       pick.innerHTML = ks.map(function (k, j) { var m = DeskSmart.MODELS[k]; return '<button class="btn" data-model="' + k + '">Turn on ' + m.name + ", download " + (infos[j].a ? infos[j].a.mb : (pr.gpu ? m.gpuMB : m.cpuMB)) + ' MB</button>'; }).join("") + '<span class="note">Needs ' + DeskSmart.MODELS.small.ram + " for the small one" + (pr.gpu ? ", " + DeskSmart.MODELS.big.ram + " for the bigger one" : "") + ". The download is kept in your browser, so a failed start does not download it again.</span>";
       var auto = null; try { auto = sessionStorage.getItem("wd-smart-auto"); sessionStorage.removeItem("wd-smart-auto"); } catch (x) {}
@@ -113,7 +113,7 @@
           smbar.hidden = true; pick.hidden = true; $("#smtools").hidden = false; smm.textContent = DeskSmart.MODELS[k].name + " is on. It runs on your device."; DeskSmart.methodNow(k).then(function (m) { if (m) { var d = document.createElement("details"); d.innerHTML = "<summary>Technical details</summary><pre class=\"note\"></pre>"; d.querySelector("pre").textContent = "Method in use: " + m + "\nWriter's Desk " + WritersDesk.version + "\nLog:\n" + DeskSmart.log(k).join("\n"); smm.appendChild(d); } });
         }, function (e) { smbar.hidden = true; pick.querySelectorAll("button").forEach(function (x) { x.disabled = false; }); smm.textContent = "It could not start: " + (e && e.message ? e.message : "unknown error"); var d = document.createElement("details"); d.innerHTML = "<summary>Technical details (send me these)</summary><pre class=\"note\" style=\"white-space:pre-wrap\"></pre>"; d.querySelector("pre").textContent = "Writer's Desk " + (window.WritersDesk ? WritersDesk.version : "") + "\nPath: " + (e && e.path || "") + "\nError: " + (e && e.raw || e) + "\nLog:\n" + (window.DeskSmart ? DeskSmart.log(k).join("\n") : "") + "\nBrowser: " + navigator.userAgent; smm.appendChild(d); });
       }; });
-      if (auto && pick.querySelector("[data-model=" + auto + "]")) { DeskSmart.info(auto).then(function (n) { smm.textContent = (n.reason || "The earlier method did not work on this device.") + " Trying method " + (n.i + 1) + " of " + n.n + " (" + n.a.dev + ", " + n.a.dt + "). " + (n.cached ? "Those files are already downloaded." : "This needs another download of about " + n.a.mb + " MB."); pick.querySelector("[data-model=" + auto + "]").click(); }); }
+      if (auto && pick.querySelector("[data-model=" + auto + "]")) { DeskSmart.info(auto).then(function (n) { var big = !n.cached && n.a.mb > 800; smm.textContent = (n.reason || "The earlier method did not work on this device.") + " Trying method " + (n.i + 1) + " of " + n.n + " (" + n.a.dev + ", " + n.a.dt + "). " + (n.cached ? "Those files are already downloaded." : "This needs another download of about " + n.a.mb + " MB." + (big ? " That is large, so I did not start it. Press the button if you want it." : "")); if (!big) pick.querySelector("[data-model=" + auto + "]").click(); }); }
       });
     });
   }
@@ -146,5 +146,5 @@
       if (e && e.garbage && DeskSmart.current()) { var k = DeskSmart.current(); return DeskSmart.markBad(k).then(function (more) { res.innerHTML = '<p class="note">This method gave garbage (' + esc(e.raw.split("\n")[0]) + "). " + (more ? "Switching to the next method and reloading..." : "The bigger model gave unusable output with every method here, so I have turned it off on this device. The small one still works. Reload the page to continue.") + "</p>"; if (more) setTimeout(function () { location.reload(); }, 1500); }); }
       res.innerHTML = '<p class="note">' + (e && e.guard ? "This attempt failed, try again." : "Smart mode failed: " + esc(e && e.message ? e.message : "unknown error")) + "</p>" + (e && e.raw ? '<details><summary>Technical details</summary><pre class="note" style="white-space:pre-wrap">' + esc(e.raw) + "</pre></details>" : ""); }).then(function () { document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = false; }); });
   }; });
-  window.WritersDesk = { run: run, version: "1.2.8" };
+  window.WritersDesk = { run: run, version: "1.2.9" };
 })();
