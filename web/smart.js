@@ -37,7 +37,7 @@
   var L4 = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/dist/transformers.min.js";
   function list(k, gpu) {
     var m = MODELS[k];
-    if (k === "big") return gpu ? [{ lib: L4, dev: "webgpu", dt: "q4", mb: 1788 }, { lib: LIB, dev: "webgpu", dt: "q4", mb: 1788 }, { lib: L4, dev: "webgpu", dt: "q4f16", mb: m.gpuMB }, { lib: LIB, dev: "webgpu", dt: "q4f16", mb: m.gpuMB }, { lib: L4, dev: "webgpu", dt: "fp16", mb: 3104 }] : [];
+    if (k === "big") return gpu && !getSt(k).dead ? [{ lib: LIB, dev: "webgpu", dt: "q4f16", mb: m.gpuMB }, { lib: L4, dev: "webgpu", dt: "q4f16", mb: m.gpuMB }] : [];
     if (!gpu) return [{ lib: LIB, dev: "wasm", dt: "q8", mb: m.cpuMB }, { lib: L4, dev: "wasm", dt: "q8", mb: m.cpuMB }];
     return [
       { lib: L4, dev: "webgpu", dt: "q4f16", mb: 483 },
@@ -47,8 +47,8 @@
     ];
   }
   function label(a) { return a.dev + " " + a.dt + " (engine " + (a.lib === LIB ? "3.7.5" : "4.3.1") + ")"; }
-  function getSt(k) { try { return JSON.parse(localStorage.getItem("wd-smart-" + k) || "{}"); } catch (e) { return {}; } }
-  function setSt(k, v) { try { localStorage.setItem("wd-smart-" + k, JSON.stringify(v)); } catch (e) {} }
+  function getSt(k) { try { return JSON.parse(localStorage.getItem("wd-smart2-" + k) || "{}"); } catch (e) { return {}; } }
+  function setSt(k, v) { try { localStorage.setItem("wd-smart2-" + k, JSON.stringify(v)); } catch (e) {} }
   function logOf(k) { try { return JSON.parse(localStorage.getItem("wd-smart-log-" + k) || "[]"); } catch (e) { return []; } }
   function logAdd(k, msg) { var l = logOf(k); l.push(new Date().toISOString().slice(11, 19) + " " + msg); try { localStorage.setItem("wd-smart-log-" + k, JSON.stringify(l.slice(-30))); } catch (e) {} }
   function loadedBefore(k, a) { return logOf(k).some(function (x) { return x.indexOf(" " + a.dev + " " + a.dt + " ") >= 0 && /: loaded/.test(x); }); }
@@ -86,7 +86,7 @@
     var s = support(); if (!s.ok) return Promise.reject(new Error(s.why));
     var p = probe().then(function (pr) {
       var L = list(k, pr.gpu);
-      if (!L.length) throw new Error("The bigger model needs the graphics chip (WebGPU), and this browser does not offer it. Please use the small one.");
+      if (!L.length) throw new Error("The bigger model does not work on this device (it needs the graphics chip, and its methods failed or gave unusable output). Please use the small one.");
       var st = getSt(k), i = st.ok != null ? st.ok : (st.next || 0), errs = st.errs || [];
       if (i >= L.length) { i = 0; errs = []; }
       var a = L[i];
@@ -98,7 +98,7 @@
           try { sessionStorage.setItem("wd-smart-auto", k); } catch (x) {}
           location.reload();
           return new Promise(function () {});
-        } else setSt(k, {});
+        } else setSt(k, k === "big" ? { dead: 1 } : {});
         var er = new Error(plain(errs.join(" ")));
         er.raw = errs.join("\n"); er.path = "tried " + (i + 1) + " of " + L.length + " methods";
         throw er;
@@ -113,8 +113,8 @@
       var L = list(k, pr.gpu), st = getSt(k), errs = st.errs || [], bad = L[curIdx], nx = curIdx + 1;
       errs.push((curIdx + 1) + ". " + label(bad) + ": loaded but produced unusable output");
       logAdd(k, "method " + (curIdx + 1) + " of " + L.length + " " + label(bad) + ": unusable output (garbage characters)");
-      while (nx < L.length && L[nx].dt === bad.dt) nx++; // the same file would give the same garbage on another engine
-      if (nx >= L.length) { setSt(k, {}); return false; }
+      while (nx < L.length && L[nx].dt === bad.dt && L[nx].lib === bad.lib) nx++;
+      if (nx >= L.length) { setSt(k, k === "big" ? { dead: 1 } : {}); logAdd(k, "no method left that gives usable output"); return false; }
       setSt(k, { next: nx, errs: errs, reason: "Method " + (curIdx + 1) + " (" + bad.dt + ") gave unusable output." });
       try { sessionStorage.setItem("wd-smart-auto", k); } catch (x) {}
       return true;
@@ -242,5 +242,5 @@
     var out = []; (after.toLowerCase().match(/[a-z']+/g) || []).forEach(function (w) { var b = w.replace(/(ing|ed|es|s|ly)$/, ""); if (w.length >= 6 && !seen[w] && !seen[b] && out.indexOf(w) < 0) out.push(w); });
     return out.slice(0, 8);
   }
-  window.DeskSmart = { log: logOf,  markBad: markBad, methodNow: methodNow, check: check, chunks: chunks, genOpts: genOpts, MODELS: MODELS, support: support, probe: probe, info: info, load: load, rewrite: rewrite, define: define, addedFacts: addedFacts, newWords: newWords, ready: function () { return !!cur; }, current: function () { return key; } };
+  window.DeskSmart = { bigDead: function () { return !!getSt("big").dead; }, resetBig: function () { setSt("big", {}); }, log: logOf,  markBad: markBad, methodNow: methodNow, check: check, chunks: chunks, genOpts: genOpts, MODELS: MODELS, support: support, probe: probe, info: info, load: load, rewrite: rewrite, define: define, addedFacts: addedFacts, newWords: newWords, ready: function () { return !!cur; }, current: function () { return key; } };
 })();
