@@ -33,3 +33,12 @@ mark{background:none;color:inherit;border-radius:3px;padding:0 1px}
 .foot{margin-top:28px;color:var(--dim);font-size:13px;text-align:center}.foot a{color:var(--dim)}
 @media(max-width:620px){.stats{grid-template-columns:repeat(3,1fr)}.ver{display:none}}
 .m-dash{padding:0 4px}
+
+.m-spell{border-bottom:2px dashed #fff}.m-gram{outline:1px solid #8a8a8a;outline-offset:1px;border-radius:3px}
+mark[data-i]{cursor:pointer}mark[data-i]:hover,mark[data-i]:focus{background:#222;outline:1px solid #fff}
+.fixes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.fixes .btn{padding:5px 14px;font-size:13px}.fixrow{margin:0 0 12px}
+.pop{position:fixed;z-index:50;background:#0a0a0a;border:1px solid #fff;border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.8);max-height:70vh;overflow:auto}
+.pop .pt{margin:0;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}.pop .pw{margin:2px 0 8px;font:16px Georgia,serif}
+.opt{display:block;width:100%;text-align:left;background:transparent;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:7px 10px;margin:5px 0;font:inherit;font-size:14px;cursor:pointer}.opt:hover{border-color:#fff}
+.opt.dim{color:var(--dim);display:inline-block;width:auto;margin-right:6px}.pa{margin-top:8px}.note.small{font-size:12px}
+.chip.m-spell{border-bottom:2px dashed #fff}.chip.m-gram{outline:1px solid #8a8a8a}
