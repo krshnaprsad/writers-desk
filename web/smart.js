@@ -50,16 +50,32 @@
   function getSt(k) { try { return JSON.parse(localStorage.getItem("wd-smart-" + k) || "{}"); } catch (e) { return {}; } }
   function setSt(k, v) { try { localStorage.setItem("wd-smart-" + k, JSON.stringify(v)); } catch (e) {} }
   function info(k) { return probe().then(function (pr) { var L = list(k, pr.gpu), st = getSt(k), i = st.ok != null ? st.ok : (st.next || 0); return { i: i, n: L.length, a: L[i], retry: !!st.next && st.ok == null }; }); }
+  // Download progress comes from the "progress_total" event (all files, known up front). Older engines only report per file.
+  // A watchdog turns a stall into an error, so the page moves to the next method instead of hanging.
   function tryOne(a, k, progress) {
-    return import(a.lib).then(function (T) {
-      var files = {}, m = MODELS[k];
+    var t0 = Date.now(), lastMove = Date.now(), loaded = 0, total = 0, dlDone = false, dlDoneAt = 0, timer = null, files = {}, failed = false;
+    function fmt() { return Math.round(loaded / 1e6) + " of " + Math.round(total / 1e6) + " MB"; }
+    function startMsg() { return "Download finished. Starting the model on your " + (a.dev === "webgpu" ? "graphics chip" : "processor") + " (" + a.dt + "). The first start can take one or two minutes. " + Math.round((Date.now() - dlDoneAt) / 1000) + " s so far."; }
+    var wd = new Promise(function (_, rej) {
+      timer = setInterval(function () {
+        var now = Date.now();
+        if (dlDone) { progress(1, startMsg()); if (now - dlDoneAt > 180000) { rej(new Error("Aborted: the model did not start within 3 minutes with " + label(a) + ".")); } }
+        else if (now - lastMove > 90000) rej(new Error("Aborted: no download progress for 90 seconds with " + label(a) + "."));
+        else if (total && loaded) progress(loaded / total, "Downloading " + fmt() + " (" + Math.round(100 * loaded / total) + "%)");
+        else progress(0, "Connecting to the download server... " + Math.round((now - t0) / 1000) + " s");
+      }, 1000);
+    });
+    var work = import(a.lib).then(function (T) {
+      var m = MODELS[k];
       function cb(x) {
-        if (x.status === "progress" && x.total) { files[x.file] = { l: x.loaded, t: x.total }; var l = 0, t = 0; for (var f in files) { l += files[f].l; t += files[f].t; } progress(t ? l / t : 0, Math.round(l / 1e6) + " of " + Math.round(t / 1e6) + " MB"); }
-        else if (x.status === "ready") progress(1, "Starting up...");
+        if (x.status === "progress_total" && x.total) { if (x.loaded !== loaded) lastMove = Date.now(); loaded = x.loaded; total = x.total; if (loaded >= total) { dlDone = true; dlDoneAt = dlDoneAt || Date.now(); } }
+        else if (x.status === "progress" && x.total && x.file) { files[x.file] = { l: x.loaded, t: x.total }; if (!total) { var l = 0, t = 0; for (var f in files) { l += files[f].l; t += files[f].t; } loaded = l; total = t; } lastMove = Date.now(); }
+        else if (x.status === "ready") { dlDone = true; dlDoneAt = dlDoneAt || Date.now(); }
       }
       try { T.env.backends.onnx.wasm.numThreads = 1; T.env.backends.onnx.wasm.proxy = false; if (T.env.backends.onnx.webgpu) T.env.backends.onnx.webgpu.powerPreference = "high-performance"; } catch (e) {}
       TL = T; return T.pipeline("text-generation", m.id, { device: a.dev, dtype: a.dt, progress_callback: cb });
     });
+    return Promise.race([work, wd]).then(function (g) { clearInterval(timer); return g; }, function (e) { clearInterval(timer); throw e; });
   }
   function load(k, progress) {
     if (cur && key === k) return Promise.resolve(cur);
