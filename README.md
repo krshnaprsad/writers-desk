@@ -17,20 +17,7 @@ Version 1.1 can also fix what it marks. Tap any mark and you get the reason and 
 
 There is also a clean up button. It turns long dashes into short ones, curly quotes into plain ones, and removes hidden characters and double spaces. It only changes what you tick, your words stay as you wrote them, and there is an undo.
 
-## Smart mode (optional, new in 1.2)
-
-Smart mode is off until you turn it on. It runs a small AI model inside your browser, so your text never leaves your device. It is free, with no account and no key. Pick a model, it downloads once (about 500 MB for the small one, about 1.2 GB for the bigger one, which is only offered when your browser has WebGPU with 16-bit support) and stays in your browser. Then you can select some text, or put the cursor in a paragraph, and choose:
-
-- Humanize, to sound more natural and less stiff
-- Literary and richer words, which lists the new words it used with short meanings
-
-You see before and after, then Accept or Discard, and Undo works after Accept. Em dashes are stripped from whatever it writes.
-
-What it cannot do: I have not measured how good the rewrites are. These are small models (0.5 billion and 1.5 billion parameters), so expect drafts, not finished writing. They can lose your voice, change the meaning, or add things you did not say. I flag numbers and names that were not in your text, but that is not a full check. The word meanings come from the same small model and can be wrong. The bigger model needs about 3 GB of free memory and the graphics chip, so it is hidden when the browser cannot offer that. The small one runs on the processor if there is no WebGPU, one thread only, and can take minutes. Some graphics drivers crash the AI engine on one model file type, so if the first method fails the page reloads itself and tries the next one (other file types, then the processor). If a model fails to start, the page shows technical details you can send me. Failed or not, the download stays in the browser cache, so a retry does not download it again. The model code loads from a free CDN (jsDelivr) and the model files from Hugging Face, and neither receives your text.
-
-New in 1.2.9: Smart mode works through your text two or three sentences at a time, with a repetition penalty, a cap on output length (about 1.3 times the input) and sampling settings that stop the "my help my help" loops I saw with the small model. Every piece is checked before you see it: loops, output much longer or shorter than the input, and lost meaning are rejected and retried up to two times with stricter settings. If it still fails, you get a plain "This attempt failed, try again" and no garbage. While it works the page shows the part it is on, the tokens so far and the tokens per second. The bigger model has more fallback methods (q4, then fp16). I could not run the models in my own sandbox (2 GB of memory), so the guard is tested on its own, but the rewrite quality is not measured.
-
-Update for 1.2.9: the bigger model (Qwen2.5 1.5B) is hidden. On the test PC (Chrome 155, Windows, 8 GB NVIDIA GPU) its q4 file could not load (wasm memory limit), its q4f16 file gave only "!!!!" or garbage output. It is still reachable by adding ?bigger=1 to the address, as an experiment. The page also no longer downloads a large fallback (over 800 MB) on its own: it asks you to press the button. I have not seen the small model's output on a real GPU run myself.
+On-device rewriting was tried and removed because it was not reliable in browsers.
 
 ## Use it
 
@@ -61,7 +48,6 @@ Or download the repo and open `index.html`. Nothing to install. Your text never 
 - `data/phrases.js` the phrase lists
 - `data/swaps.js` the alternatives behind the fixes
 - `data/dict-*.js` the English word list (hunspell en_US, see `vendor/NOTICE.md`)
-- `web/smart.js` Smart mode, loads the library and models only when you turn it on
 - `vendor/nspell.js` the spelling library (MIT, Titus Wormer)
 - `tests/` the tests
 
