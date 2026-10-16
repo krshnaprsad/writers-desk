@@ -90,7 +90,7 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.2"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.3"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
@@ -105,12 +105,14 @@
       var ks = pr.gpu ? ["small", "big"] : ["small"];
       smm.textContent = pr.gpu ? "Your browser can use the graphics chip, which is faster. Both models are available." : "No usable graphics acceleration here, so it will run on the processor, slower. Only the small model is offered, because the bigger one does not fit in a browser tab without the graphics chip.";
       pick.innerHTML = ks.map(function (k) { var m = DeskSmart.MODELS[k]; return '<button class="btn" data-model="' + k + '">Turn on ' + m.name + ", download " + (pr.gpu ? m.gpuMB : m.cpuMB) + ' MB</button>'; }).join("") + '<span class="note">Needs ' + DeskSmart.MODELS.small.ram + " for the small one" + (pr.gpu ? ", " + DeskSmart.MODELS.big.ram + " for the bigger one" : "") + ". The download is kept in your browser, so a failed start does not download it again.</span>";
+      var auto = null; try { auto = sessionStorage.getItem("wd-smart-auto"); sessionStorage.removeItem("wd-smart-auto"); } catch (x) {}
       pick.querySelectorAll("[data-model]").forEach(function (b) { b.onclick = function () {
         var k = b.dataset.model; pick.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); smbar.hidden = false; smm.textContent = "Downloading...";
         DeskSmart.load(k, function (f, t) { $("#smfill").style.width = Math.round(f * 100) + "%"; smm.textContent = f < 1 ? "Downloading " + t + " (" + Math.round(f * 100) + "%)" : t; }).then(function () {
           smbar.hidden = true; pick.hidden = true; $("#smtools").hidden = false; smm.textContent = DeskSmart.MODELS[k].name + " is on. It runs on your device.";
         }, function (e) { smbar.hidden = true; pick.querySelectorAll("button").forEach(function (x) { x.disabled = false; }); smm.textContent = "It could not start: " + (e && e.message ? e.message : "unknown error"); var d = document.createElement("details"); d.innerHTML = "<summary>Technical details (send me these)</summary><pre class=\"note\" style=\"white-space:pre-wrap\"></pre>"; d.querySelector("pre").textContent = "Writer's Desk " + (window.WritersDesk ? WritersDesk.version : "") + "\nPath: " + (e && e.path || "") + "\nError: " + (e && e.raw || e) + "\nBrowser: " + navigator.userAgent; smm.appendChild(d); });
       }; });
+      if (auto && pick.querySelector("[data-model=" + auto + "]")) { DeskSmart.info(auto).then(function (n) { smm.textContent = "The first method did not work on this device. Trying method " + (n.i + 1) + " of " + n.n + " (" + n.a.dev + ", " + n.a.dt + ", download up to " + n.a.mb + " MB)..."; pick.querySelector("[data-model=" + auto + "]").click(); }); }
     });
   }
   function smRange() {
@@ -137,5 +139,5 @@
         DeskSmart.define(words).then(function (d) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary). If you do not like one, Discard and run again, or change it in the text after you accept:</p><ul class="smwords">' + words.map(function (w) { return "<li><b>" + esc(w) + "</b>" + (d[w] ? ": " + esc(d[w]) : "") + "</li>"; }).join("") + "</ul>"; }); }
     }).catch(function (e) { res.innerHTML = '<p class="note">Smart mode failed: ' + esc(e && e.message ? e.message : "unknown error") + "</p>"; }).then(function () { document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = false; }); });
   }; });
-  window.WritersDesk = { run: run, version: "1.2.2" };
+  window.WritersDesk = { run: run, version: "1.2.3" };
 })();
