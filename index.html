@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="web/app.css">
 </head>
 <body>
-<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Writer's Desk</h1><p class="tag">Read your own writing back to yourself</p></div><span class="ver">v1.1</span></header>
+<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Writer's Desk</h1><p class="tag">Read your own writing back to yourself</p></div><span class="ver">v1.2</span></header>
 <main>
   <section class="card">
     <h2>Paste your writing</h2>
@@ -30,6 +30,16 @@
     <section class="card"><h2>Sentence rhythm</h2><div id="rhythm"></div></section>
     <section class="card"><h2>Repeated words</h2><div id="reps"></div></section>
   </div>
+  <section class="card smart" id="smart"><h3>Smart mode (optional)</h3>
+    <p class="note">Smart mode rewrites a paragraph or the text you select, two ways: Humanize (sounds natural, like a person wrote it) or Literary (richer words, with the new words listed and explained). It uses a small AI model that runs inside your browser, so your text never leaves your device. It is free and needs no account. The model downloads once, then stays in your browser.</p>
+    <p class="note">These are small models, so treat the result as a draft. They can flatten your voice, change the meaning, or add things you did not say. I check for added numbers and names, but not for everything. Always compare before and after.</p>
+    <div class="row" id="smpick"></div>
+    <div class="bar" id="smbar" hidden><i id="smfill"></i></div><p class="note" id="smmsg"></p>
+    <div id="smtools" hidden>
+      <div class="row"><button class="btn go" data-sm="human">Humanize</button><button class="btn go" data-sm="literary">Literary and richer words</button><span class="note">Works on the text you have selected in the box above, or the paragraph the cursor is in.</span></div>
+      <div id="smres"></div>
+    </div>
+  </section>
   <section class="card limits"><h3>What this can and cannot do</h3>
     <p class="note">The counts are exact. The marks are my opinion of tired phrases, filler and padded words, from lists you can read and change in <code>data/phrases.js</code>. Plenty of good writing uses them on purpose.</p>
     <p class="note">The fixes are not an AI and nothing is uploaded. Alternatives come from small built-in lists (<code>data/swaps.js</code>), so for many phrases there is no suggestion, and a suggestion can be wrong for your sentence. Spelling uses a standard word list, and it will mark names and made-up words. The grammar checks are only a few simple rules: a or an, doubled words, capital letters and spacing. It cannot catch wrong word choice, tense or sentence structure. Always read your text again, and use Undo if a change reads badly. It does not tell you whether a person or an AI wrote something. It works on English and runs in your browser.</p>
@@ -41,6 +51,7 @@
 <script src="data/swaps.js"></script>
 <script src="src/desk.js"></script>
 <script src="src/spell.js"></script>
+<script src="web/smart.js"></script>
 <script src="web/app.js"></script>
 </body>
 </html>
