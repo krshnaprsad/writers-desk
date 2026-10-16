@@ -90,7 +90,7 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.0"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.1"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
@@ -133,5 +133,5 @@
         DeskSmart.define(words).then(function (d) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary). If you do not like one, Discard and run again, or change it in the text after you accept:</p><ul class="smwords">' + words.map(function (w) { return "<li><b>" + esc(w) + "</b>" + (d[w] ? ": " + esc(d[w]) : "") + "</li>"; }).join("") + "</ul>"; }); }
     }).catch(function (e) { res.innerHTML = '<p class="note">Smart mode failed: ' + esc(e && e.message ? e.message : "unknown error") + "</p>"; }).then(function () { document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = false; }); });
   }; });
-  window.WritersDesk = { run: run };
+  window.WritersDesk = { run: run, version: "1.2.1" };
 })();
