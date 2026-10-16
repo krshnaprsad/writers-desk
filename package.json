@@ -1,0 +1,9 @@
+{
+  "name": "writers-desk",
+  "version": "1.0.0",
+  "description": "Paste your writing and see reading time, sentence rhythm, repeated words and tired phrases. Runs in the browser.",
+  "license": "MIT",
+  "author": "Krishna Prasad",
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node tests/desk.test.js" }
+}
