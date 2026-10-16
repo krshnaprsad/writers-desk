@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Writer's Desk</title>
+<link rel="stylesheet" href="web/app.css">
+</head>
+<body>
+<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Writer's Desk</h1><p class="tag">Read your own writing back to yourself</p></div><span class="ver">v1.0</span></header>
+<main>
+  <section class="card">
+    <h2>Paste your writing</h2>
+    <textarea id="txt" spellcheck="false" placeholder="Paste a story, an essay, a caption, anything. It stays in your browser."></textarea>
+    <div class="row"><button class="btn" id="clear">Clear</button><button class="btn" id="ex">Try an example</button><button class="btn" id="copy">Copy text</button><span class="note" id="count"></span></div>
+    <details id="cleanbox"><summary>Clean up the text</summary>
+      <div class="opts">
+        <label class="chk"><input type="checkbox" id="o-dashes" checked> Long dashes to short dashes (&ldquo;word&mdash;word&rdquo; becomes &ldquo;word - word&rdquo;)</label>
+        <label class="chk"><input type="checkbox" id="o-quotes" checked> Curly quotes and the ellipsis symbol to plain ones</label>
+        <label class="chk"><input type="checkbox" id="o-hidden" checked> Remove hidden characters and odd spaces</label>
+        <label class="chk"><input type="checkbox" id="o-spaces" checked> Remove double spaces</label>
+      </div>
+      <div class="row"><button class="btn go" id="doclean">Clean my text</button><button class="btn" id="undo" hidden>Undo</button><span class="note" id="cleanmsg"></span></div>
+      <p class="note">This only changes what you tick. Your words stay exactly as you wrote them.</p>
+    </details>
+  </section>
+  <div id="out" hidden>
+    <section class="card"><div class="stats" id="stats"></div></section>
+    <section class="card"><h2>Marked text</h2><div class="legend" id="legend"></div><div class="marked" id="marked"></div><p class="note" id="markednote"></p></section>
+    <section class="card"><h2>Sentence rhythm</h2><div id="rhythm"></div></section>
+    <section class="card"><h2>Repeated words</h2><div id="reps"></div></section>
+  </div>
+  <section class="card limits"><h3>What this can and cannot tell you</h3>
+    <p class="note">The counts are exact. The marks are only my opinion of tired phrases, filler and padded words, from lists you can read and change in <code>data/phrases.js</code>. Plenty of good writing uses them on purpose. It does not tell you whether a person or an AI wrote something. It works on English text and runs completely in your browser.</p>
+  </section>
+  <p class="foot">Made by Zero3. <a href="https://github.com/krshnaprsad/writers-desk" target="_blank" rel="noopener">Source on GitHub</a></p>
+</main>
+<script src="data/phrases.js"></script>
+<script src="src/desk.js"></script>
+<script src="web/app.js"></script>
+</body>
+</html>
