@@ -37,4 +37,38 @@ assert.strictEqual(D.clean("a\u200Bb\u00A0c  d"), "ab c d");
 assert.strictEqual(D.clean("a\u2014b", { dashes: false }), "a\u2014b");
 const messy = "Line one\u2014two.\nLine \u201Cthree\u201D."; const c = D.clean(messy); assert.ok(!/[\u2014\u201C\u201D]/.test(c));
 assert.strictEqual(D.clean(c), c, "cleaning twice changes nothing");
+
+// ---- fixing ----
+const S = require("../data/swaps.js");
+const fix = (txt, kinds, o) => D.fixAll(txt, kinds, o).text;
+assert.strictEqual(fix("Home\u2014slowly\u2014and", ["dash"]), "Home, slowly, and");
+assert.strictEqual(fix("One thing\u2014 two things.", ["dash"]), "One thing, two things.");
+assert.strictEqual(D.choices("Ab\u2014b\u2014c", D.analyze("Ab\u2014b\u2014c").flags.find(f => f.type === "dash")).choices.length, 4, "pair offers four ways");
+assert.strictEqual(fix("It was really cold. Really cold.", ["filler"]), "It was cold. Cold.");
+assert.strictEqual(fix("Moreover, it works. We crucial.", ["ai"]), "Also, it works. We key.");
+assert.strictEqual(fix("Needless to say, go.", ["cliche"]), "Needless to say, go.", "tired phrases are never fixed on their own");
+assert.strictEqual(fix("Needless to say, go.", ["cliche"]).length > 0, true);
+const rf = D.analyze("The rain fell. The rain fell.").flags.filter(f => f.type === "rep");
+assert.ok(rf.length >= 1 && D.choices("The rain fell. The rain fell.", rf[0]).choices[0].label.indexOf("Use") === 0);
+assert.strictEqual(fix("He walked home. He walked back.", ["rep"]).indexOf("walked", 20) < 0, true, "close repeat swapped");
+// alternatives are plain and never contain a long dash
+(function scan(o) { Object.keys(o).forEach(k => { const v = o[k]; if (typeof v === "string") assert.ok(!/[\u2014\u2013]|--/.test(v), v); else if (v && typeof v === "object") scan(v); }); })(S);
+D.analyze("The rain fell. The rain fell harder. The rain fell and fell. Little did I know.").flags.forEach(f => D.choices("x", Object.assign({}, f, { start: 0, end: 0 })).choices.forEach(c => c.edits.forEach(e => assert.ok(!/[\u2014\u2013]/.test(e.text)))));
+// grammar and spacing
+assert.strictEqual(fix("I bought a apple and an pear.", ["gram"]), "I bought an apple and a pear.");
+assert.strictEqual(fix("An hour and a university and a one and an honest man.", ["gram"]), "An hour and a university and a one and an honest man.");
+assert.strictEqual(fix("This is is odd, and the the end.", ["gram"]), "This is odd, and the end.");
+assert.strictEqual(fix("so i said that i am here. then i left.", ["gram"]), "So I said that I am here. Then I left.");
+assert.strictEqual(fix("Hello , world.  Next,one.", ["gram"]), "Hello, world. Next, one.");
+assert.strictEqual(fix("She had had enough. Mr. smith left... and so on. \"Why?\" she asked.", ["gram"]), "She had had enough. Mr. smith left... and so on. \"Why?\" she asked.", "no false alarms");
+assert.strictEqual(fix("See www.example.com and a@b.org. Item 3.5 ok", ["gram"]), "See www.example.com and a@b.org. Item 3.5 ok");
+// spelling with a tiny stand-in word list
+const stub = { correct: w => ["the", "cat", "sat", "on", "mat", "it", "was", "fine", "of"].indexOf(w.toLowerCase()) >= 0, suggest: w => ["cat"] };
+const sa = D.analyze("The cta sat on the mat. It was fine, said Krishna of NASA.", { spell: stub });
+assert.deepStrictEqual(sa.flags.filter(f => f.type === "spell").map(f => f.text), ["cta", "said"], "names and acronyms are skipped, unknown words are marked");
+assert.deepStrictEqual(D.analyze("The cta sat.", { spell: stub, ignore: { cta: 1 } }).flags.filter(f => f.type === "spell"), [], "ignored words are accepted");
+assert.strictEqual(D.choices("The cta sat.", sa.flags.find(f => f.type === "spell"), { spell: stub }).choices[0].edits[0].text, "cat");
+assert.strictEqual(D.analyze("The cta sat.").flags.filter(f => f.type === "spell").length, 0, "no spelling marks without a dictionary");
+// fixing is safe to repeat
+const once = fix("Moreover\u2014really\u2014it is a apple. i agree.", ["dash", "filler", "ai", "gram"]); assert.strictEqual(fix(once, ["dash", "filler", "ai", "gram"]), once);
 console.log("desk tests passed");
