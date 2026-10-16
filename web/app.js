@@ -90,10 +90,48 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.1.0"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.2.0"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
   setTimeout(loadDict, 50);
+  // ---- Smart mode (optional, off until asked) ----
+  var sup = window.DeskSmart ? DeskSmart.support() : { ok: false, why: "Smart mode did not load." };
+  var smm = $("#smmsg"), smbar = $("#smbar"), pick = $("#smpick");
+  if (!sup.ok) smm.textContent = sup.why;
+  else {
+    smm.textContent = sup.gpu ? "Your browser can use the graphics chip, which is faster." : "No graphics acceleration found, so it will run on the processor and be slower.";
+    pick.innerHTML = Object.keys(DeskSmart.MODELS).map(function (k) { var m = DeskSmart.MODELS[k]; return '<button class="btn" data-model="' + k + '">Turn on ' + m.name + ", download " + (sup.gpu ? m.gpuMB : m.cpuMB) + ' MB</button>'; }).join("") + '<span class="note">Needs ' + DeskSmart.MODELS.small.ram + " for the small one, " + DeskSmart.MODELS.big.ram + " for the bigger one.</span>";
+    pick.querySelectorAll("[data-model]").forEach(function (b) { b.onclick = function () {
+      var k = b.dataset.model; pick.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); smbar.hidden = false; smm.textContent = "Downloading...";
+      DeskSmart.load(k, function (f, t) { $("#smfill").style.width = Math.round(f * 100) + "%"; smm.textContent = f < 1 ? "Downloading " + t + " (" + Math.round(f * 100) + "%)" : t; }).then(function () {
+        smbar.hidden = true; pick.hidden = true; $("#smtools").hidden = false; smm.textContent = DeskSmart.MODELS[k].name + " is on. It runs on your device.";
+      }, function (e) { smbar.hidden = true; pick.querySelectorAll("button").forEach(function (x) { x.disabled = false; }); smm.textContent = "It could not start: " + (e && e.message ? e.message : "unknown error") + ". This computer may be short of memory. Try the small one. Everything else still works."; });
+    }; });
+  }
+  function smRange() {
+    var ta = $("#txt"), t = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    if (e - s > 3) return [s, e];
+    var pos = s, ps = t.lastIndexOf("\n\n", pos - 1); ps = ps < 0 ? 0 : ps + 2; var pe = t.indexOf("\n\n", pos); if (pe < 0) pe = t.length;
+    return [ps, pe];
+  }
+  document.querySelectorAll("[data-sm]").forEach(function (b) { b.onclick = function () {
+    var r = smRange(), t = $("#txt").value, seg = t.slice(r[0], r[1]), mode = b.dataset.sm, res = $("#smres");
+    if (!seg.trim()) { res.innerHTML = '<p class="note">Select some text, or put the cursor in a paragraph, first.</p>'; return; }
+    document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = true; });
+    res.innerHTML = '<p class="note">Thinking. On a laptop this can take from several seconds to a few minutes...</p>';
+    DeskSmart.rewrite(seg, mode).then(function (out) {
+      if (!out) throw new Error("It gave nothing back. Try again.");
+      var warn = DeskSmart.addedFacts(seg, out), words = mode === "literary" ? DeskSmart.newWords(seg, out) : [];
+      var h = '<div class="smcmp"><div><b>Before</b>' + esc(seg) + '</div><div><b>After</b>' + esc(out) + "</div></div>";
+      if (warn.length) h += '<p class="smwarn">It added things that were not in your text: ' + esc(warn.join(", ")) + ". Check that these are what you meant.</p>";
+      h += '<div id="smwords"></div><div class="row"><button class="btn go" id="smacc">Accept</button><button class="btn" id="smno">Discard</button></div><p class="note small">Accept replaces the text above. Undo puts it back.</p>';
+      res.innerHTML = h;
+      $("#smacc").onclick = function () { var cur = $("#txt").value; if (cur.slice(r[0], r[1]) !== seg) { res.innerHTML = '<p class="note">The text changed since. Run it again.</p>'; return; } setText(cur.slice(0, r[0]) + out + cur.slice(r[1]), "Rewritten by Smart mode. Use Undo to go back."); res.innerHTML = ""; };
+      $("#smno").onclick = function () { res.innerHTML = ""; };
+      if (words.length) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary):</p><p class="note">Looking them up...</p>';
+        DeskSmart.define(words).then(function (d) { $("#smwords").innerHTML = '<p class="note">New words, with short meanings from the same small model (they can be wrong, check a dictionary). If you do not like one, Discard and run again, or change it in the text after you accept:</p><ul class="smwords">' + words.map(function (w) { return "<li><b>" + esc(w) + "</b>" + (d[w] ? ": " + esc(d[w]) : "") + "</li>"; }).join("") + "</ul>"; }); }
+    }).catch(function (e) { res.innerHTML = '<p class="note">Smart mode failed: ' + esc(e && e.message ? e.message : "unknown error") + "</p>"; }).then(function () { document.querySelectorAll("[data-sm]").forEach(function (x) { x.disabled = false; }); });
+  }; });
   window.WritersDesk = { run: run };
 })();
