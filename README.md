@@ -4,6 +4,10 @@ Read your own writing back to yourself.
 
 Made by Zero3.
 
+## Why I built Writer's Desk
+
+This one is personal. When I write something and it has grammar mistakes or other problems, I put it in here and refine it. That is why I made Writer's Desk.
+
 ## What it does
 
 I write stories and captions, and I wanted a quick way to see what my writing is doing without sending it to a website. So I built this one. You paste your text and it shows you:
