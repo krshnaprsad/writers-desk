@@ -90,7 +90,7 @@
     var files = ["data/dict-0.js", "data/dict-1.js", "data/dict-2.js", "data/dict-3.js", "data/dict-4.js", "data/dict-5.js", "vendor/nspell.js"], i = 0;
     function next() {
       if (i >= files.length) { try { SP = DeskSpell.make(NSpell, window.DeskDic.aff, window.DeskDic.parts.join("\n")); } catch (e) { DICT_FAIL = true; } run(); return; }
-      var s = document.createElement("script"); s.src = files[i++] + "?v=1.3.1"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
+      var s = document.createElement("script"); s.src = files[i++] + "?v=1.3.2"; s.onload = next; s.onerror = function () { DICT_FAIL = true; run(); }; document.head.appendChild(s);
     }
     next();
   }
@@ -107,5 +107,5 @@
       }).catch(function () {});
     } catch (e) {}
   })();
-  window.WritersDesk = { run: run, version: "1.3.1" };
+  window.WritersDesk = { run: run, version: "1.3.2" };
 })();
