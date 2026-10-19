@@ -2,7 +2,7 @@
 
 Read your own writing back to yourself.
 
-Made by Zero3.
+Made by [Zero3](https://www.zero3creatives.net/).
 
 ## Why I built Writer's Desk
 
